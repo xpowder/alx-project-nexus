@@ -1,0 +1,526 @@
+{% extends "dashboard/base.html" %}
+{% load widget_tweaks static %}
+
+{% block title %}Account Settings - E-Commerce Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="main-container fade-in">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6">
+                <div class="card shadow-sm border-0 rounded-4">
+                    <div class="card-header bg-gradient-primary text-white py-3 rounded-top-4">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <h5 class="card-title mb-0 fw-semibold">
+                                <i class="fas fa-cog me-2"></i>Account Settings
+                            </h5>
+                            <a href="{% url 'profile' %}" class="btn btn-outline-light btn-sm rounded-pill px-3">
+                                <i class="fas fa-user me-2"></i>Back to Profile
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body p-4">
+                        <form method="POST" id="settingsForm" action="{% url 'settings' %}">
+                            {% csrf_token %}
+                            {% if form.non_field_errors %}
+                            <div class="alert alert-danger rounded-3 shadow-sm">
+                                {% for error in form.non_field_errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            <div class="mb-4">
+                                <h6 class="section-title fw-semibold text-dark mb-3">
+                                    <i class="fas fa-user-edit me-2 text-primary"></i>Update Personal Information
+                                </h6>
+                                <div class="row g-4">
+                                    <div class="col-md-6">
+                                        <label for="{{ form.username.id_for_label }}" class="form-label fw-medium">Username *</label>
+                                        {{ form.username|add_class:"form-control rounded-pill shadow-sm" }}
+                                        {% if form.username.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {% for error in form.username.errors %}{{ error }}{% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="{{ form.email.id_for_label }}" class="form-label fw-medium">Email *</label>
+                                        {{ form.email|add_class:"form-control rounded-pill shadow-sm" }}
+                                        {% if form.email.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {% for error in form.email.errors %}{{ error }}{% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="{{ form.first_name.id_for_label }}" class="form-label fw-medium">First Name</label>
+                                        {{ form.first_name|add_class:"form-control rounded-pill shadow-sm" }}
+                                        {% if form.first_name.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {% for error in form.first_name.errors %}{{ error }}{% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="{{ form.last_name.id_for_label }}" class="form-label fw-medium">Last Name</label>
+                                        {{ form.last_name|add_class:"form-control rounded-pill shadow-sm" }}
+                                        {% if form.last_name.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {% for error in form.last_name.errors %}{{ error }}{% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-3 justify-content-between pt-3 border-top">
+                                <button type="submit" class="btn btn-primary rounded-pill px-4 py-2">
+                                    <i class="fas fa-save me-2"></i>Save Changes
+                                </button>
+                                <a href="{% url 'profile' %}" class="btn btn-outline-secondary rounded-pill px-4 py-2">
+                                    <i class="fas fa-times me-2"></i>Cancel
+                                </a>
+                            </div>
+                        </form>
+                        <div class="mt-4 pt-3 border-top">
+                            <h6 class="section-title fw-semibold text-dark mb-3">
+                                <i class="fas fa-lock me-2 text-primary"></i>Account Actions
+                            </h6>
+                            <div class="d-flex gap-3 justify-content-between">
+                                <button class="btn btn-outline-primary rounded-pill px-4 py-2" data-bs-toggle="modal" data-bs-target="#passwordChangeModal">
+                                    <i class="fas fa-key me-2"></i>Change Password
+                                </button>
+                                <button class="btn btn-outline-danger rounded-pill px-4 py-2" id="deleteAccountBtn" data-url="{% url 'user_delete' user.id %}">
+                                    <i class="fas fa-trash me-2"></i>Delete Account
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal fade" id="passwordChangeModal" tabindex="-1" aria-labelledby="passwordChangeModalLabel" aria-hidden="true" data-bs-backdrop="false">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content rounded-4">
+                    <div class="modal-header bg-gradient-primary text-white rounded-top-4 change-bg">
+                        <h5 class="modal-title" id="passwordChangeModalLabel">
+                            <i class="fas fa-key me-2"></i>
+                            <span class="change-bg px-2 py-1 rounded">Change Password</span>
+                        </h5>                        
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <form method="POST" action="{% url 'password_change' %}" id="passwordChangeForm">
+                            {% csrf_token %}
+                            {% if password_form.non_field_errors %}
+                            <div class="alert alert-danger rounded-3 shadow-sm">
+                                {% for error in password_form.non_field_errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            <div class="mb-3">
+                                <label for="{{ password_form.old_password.id_for_label }}" class="form-label fw-medium">Current Password *</label>
+                                {{ password_form.old_password|add_class:"form-control rounded-pill shadow-sm" }}
+                                {% if password_form.old_password.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in password_form.old_password.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="mb-3">
+                                <label for="{{ password_form.new_password1.id_for_label }}" class="form-label fw-medium">New Password *</label>
+                                {{ password_form.new_password1|add_class:"form-control rounded-pill shadow-sm" }}
+                                {% if password_form.new_password1.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in password_form.new_password1.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="mb-3">
+                                <label for="{{ password_form.new_password2.id_for_label }}" class="form-label fw-medium">Confirm New Password *</label>
+                                {{ password_form.new_password2|add_class:"form-control rounded-pill shadow-sm" }}
+                                {% if password_form.new_password2.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in password_form.new_password2.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="d-flex gap-3 justify-content-end">
+                                <button type="button" class="btn btn-outline-secondary rounded-pill px-4 py-2" data-bs-dismiss="modal">
+                                    <i class="fas fa-times me-2"></i>Cancel
+                                </button>
+                                <button type="submit" class="btn btn-primary rounded-pill px-4 py-2">
+                                    <i class="fas fa-save me-2"></i>Change Password
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    :root {
+        --primary-color: #2563eb;
+        --secondary-color: #64748b;
+        --success-color: #10b981;
+        --danger-color: #ef4444;
+        --border-radius: 12px;
+        --box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        --transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+    }
+    .main-container {
+        background: rgba(255,255,255,0.95);
+        backdrop-filter: blur(10px);
+        border-radius: var(--border-radius);
+        box-shadow: var(--box-shadow);
+        margin: 2rem auto;
+        padding: 2rem;
+        max-width: 1400px;
+    }
+    .card {
+        border-radius: var(--border-radius);
+        background-color: #fff;
+        transition: var(--transition);
+    }
+    .card:hover {
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    }
+    .card-header.bg-gradient-primary {
+        background: linear-gradient(135deg, var(--primary-color), #1d4ed8) !important;
+        border-radius: var(--border-radius) var(--border-radius) 0 0;
+    }
+    .btn {
+        border-radius: 8px;
+        font-weight: 500;
+        transition: var(--transition);
+        border: none;
+        position: relative;
+        overflow: hidden;
+    }
+    .btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        transition: left 0.5s;
+    }
+    .btn:hover::before {
+        left: 100%;
+    }
+    .btn-primary {
+        background: linear-gradient(45deg, var(--primary-color), #1d4ed8);
+    }
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
+    }
+    .btn-outline-secondary {
+        border: 2px solid var(--secondary-color);
+        color: var(--secondary-color);
+    }
+    .btn-outline-secondary:hover {
+        background-color: var(--secondary-color);
+        color: #fff;
+    }
+    .btn-outline-danger {
+        border: 2px solid var(--danger-color);
+        color: var(--danger-color);
+    }
+    .btn-outline-danger:hover {
+        background-color: var(--danger-color);
+        color: #fff;
+    }
+    .form-control {
+        border-radius: 8px;
+        border: 2px solid #e2e8f0;
+        padding: 0.75rem 1.25rem;
+        background-color: #fff;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+    .form-control:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        outline: none;
+    }
+    .form-control.is-invalid {
+        border-color: var(--danger-color);
+    }
+    .form-label {
+        font-weight: 600;
+        color: #1f2937;
+    }
+    .modal-content {
+        border-radius: var(--border-radius);
+    }
+    .modal-header {
+        border-radius: var(--border-radius) var(--border-radius) 0 0;
+    }
+    .btn-close-white {
+        filter: invert(1);
+    }
+    .section-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #1f2937;
+        border-bottom: 2px solid #e5e7eb;
+        padding-bottom: 0.5rem;
+    }
+    .alert {
+        border-radius: 8px;
+        border: none;
+        padding: 1.25rem;
+    }
+    .invalid-feedback {
+        color: var(--danger-color);
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+    .fade-in {
+        animation: fadeIn 0.6s ease-out;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    @media (max-width: 768px) {
+        .main-container {
+            margin: 1rem;
+            padding: 1rem;
+        }
+        .d-flex.gap-3 {
+            flex-direction: column;
+        }
+        .btn {
+            width: 100%;
+        }
+        .card-body {
+            padding: 1.5rem;
+        }
+    }
+    .change-bg {
+    background-color: #2563eb; 
+    color: #fff; 
+    border-radius: 8px; 
+}
+
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                cookie = cookie.trim();
+                if (cookie.startsWith(name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    const csrftoken = getCookie('csrftoken');
+    const settingsForm = document.getElementById('settingsForm');
+    const passwordChangeForm = document.getElementById('passwordChangeForm');
+    const deleteAccountBtn = document.getElementById('deleteAccountBtn');
+    settingsForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        let isValid = true;
+        const requiredFields = this.querySelectorAll('[required]');
+        requiredFields.forEach(field => {
+            if (!field.value.trim()) {
+                isValid = false;
+                field.classList.add('is-invalid');
+            } else {
+                field.classList.remove('is-invalid');
+            }
+        });
+        if (isValid) {
+            fetch(this.action, {
+                method: 'POST',
+                body: new FormData(this),
+                headers: { 'X-CSRFToken': csrftoken }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    Swal.fire({
+                        title: 'Success!',
+                        text: 'Your settings have been updated.',
+                        icon: 'success',
+                        confirmButtonColor: '#10b981',
+                        confirmButtonText: 'OK'
+                    }).then(() => {
+                        window.location.href = '{% url "profile" %}';
+                    });
+                } else {
+                    let errorMsg = data.message || 'Failed to update settings. Please check the form.';
+                    if (data.errors) {
+                        errorMsg += '<ul>';
+                        for (const [field, errors] of Object.entries(data.errors)) {
+                            errors.forEach(error => {
+                                errorMsg += `<li>${field}: ${error.message || error}</li>`;
+                            });
+                        }
+                        errorMsg += '</ul>';
+                    }
+                    Swal.fire({
+                        title: 'Error',
+                        html: errorMsg,
+                        icon: 'error',
+                        confirmButtonColor: '#ef4444',
+                        confirmButtonText: 'OK'
+                    });
+                }
+            })
+            .catch(error => {
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Something went wrong. Please try again.',
+                    icon: 'error',
+                    confirmButtonColor: '#ef4444',
+                    confirmButtonText: 'OK'
+                });
+                console.error('Error:', error);
+            });
+        } else {
+            const firstError = this.querySelector('.is-invalid');
+            if (firstError) {
+                firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                firstError.focus();
+            }
+        }
+    });
+    passwordChangeForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        let isValid = true;
+        const requiredFields = this.querySelectorAll('[required]');
+        requiredFields.forEach(field => {
+            if (!field.value.trim()) {
+                isValid = false;
+                field.classList.add('is-invalid');
+            } else {
+                field.classList.remove('is-invalid');
+            }
+        });
+        if (isValid) {
+            fetch(this.action, {
+                method: 'POST',
+                body: new FormData(this),
+                headers: { 'X-CSRFToken': csrftoken }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    Swal.fire({
+                        title: 'Success!',
+                        text: 'Your password has been changed.',
+                        icon: 'success',
+                        confirmButtonColor: '#10b981',
+                        confirmButtonText: 'OK'
+                    }).then(() => {
+                        window.location.href = '{% url "profile" %}';
+                    });
+                } else {
+                    let errorMsg = data.message || 'Failed to change password. Please check the form.';
+                    if (data.errors) {
+                        errorMsg += '<ul>';
+                        for (const [field, errors] of Object.entries(data.errors)) {
+                            errors.forEach(error => {
+                                errorMsg += `<li>${field}: ${error.message || error}</li>`;
+                            });
+                        }
+                        errorMsg += '</ul>';
+                    }
+                    Swal.fire({
+                        title: 'Error',
+                        html: errorMsg,
+                        icon: 'error',
+                        confirmButtonColor: '#ef4444',
+                        confirmButtonText: 'OK'
+                    });
+                }
+            })
+            .catch(error => {
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Something went wrong. Please try again.',
+                    icon: 'error',
+                    confirmButtonColor: '#ef4444',
+                    confirmButtonText: 'OK'
+                });
+                console.error('Error:', error);
+            });
+        } else {
+            const firstError = this.querySelector('.is-invalid');
+            if (firstError) {
+                firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                firstError.focus();
+            }
+        }
+    });
+    deleteAccountBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        const url = this.dataset.url;
+        Swal.fire({
+            title: 'Are you sure?',
+            text: 'This action will permanently delete your account and cannot be undone.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Yes, delete it!',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch(url, {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': csrftoken }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        Swal.fire({
+                            title: 'Deleted!',
+                            text: 'Your account has been deleted.',
+                            icon: 'success',
+                            confirmButtonColor: '#10b981',
+                            confirmButtonText: 'OK'
+                        }).then(() => {
+                            window.location.href = '{% url "login" %}';
+                        });
+                    } else {
+                        Swal.fire({
+                            title: 'Error',
+                            text: data.message || 'Failed to delete account.',
+                            icon: 'error',
+                            confirmButtonColor: '#ef4444',
+                            confirmButtonText: 'OK'
+                        });
+                    }
+                })
+                .catch(error => {
+                    Swal.fire({
+                        title: 'Error',
+                        text: 'Something went wrong. Please try again.',
+                        icon: 'error',
+                        confirmButtonColor: '#ef4444',
+                        confirmButtonText: 'OK'
+                    });
+                    console.error('Error:', error);
+                });
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

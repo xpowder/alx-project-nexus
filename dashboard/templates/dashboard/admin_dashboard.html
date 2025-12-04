@@ -1,0 +1,215 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-user-shield me-2"></i>Admin Dashboard</h2>
+    <div>
+        <span class="badge bg-info p-2">
+            <i class="fas fa-clock me-1"></i>
+            <span id="current-time"></span>
+        </span>
+    </div>
+</div>
+
+<script>
+function updateClock() {
+    const now = new Date();
+    const options = { 
+        weekday: 'long', year: 'numeric', month: 'long', 
+        day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: true 
+    };
+    document.getElementById('current-time').textContent = now.toLocaleString('en-US', options);
+}
+updateClock(); 
+setInterval(updateClock, 1000);
+</script>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title"><i class="fas fa-filter me-2"></i>Filter Data</h5>
+        <div class="btn-group" role="group">
+            <a href="?period=all" class="btn {% if period == 'all' %}btn-primary{% else %}btn-outline-primary{% endif %}">All</a>
+            <a href="?period=day" class="btn {% if period == 'day' %}btn-primary{% else %}btn-outline-primary{% endif %}">Today</a>
+            <a href="?period=week" class="btn {% if period == 'week' %}btn-primary{% else %}btn-outline-primary{% endif %}">This Week</a>
+            <a href="?period=month" class="btn {% if period == 'month' %}btn-primary{% else %}btn-outline-primary{% endif %}">This Month</a>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <a href="{% url 'users_list' %}" class="text-decoration-none">
+            <div class="card border-left-primary h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Users</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ users_count }}</div>
+                        </div>
+                        <div class="col-auto"><i class="fas fa-users fa-2x text-gray-300"></i></div>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-4">
+        <a href="{% url 'products_list' %}" class="text-decoration-none">
+            <div class="card border-left-success h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Total Products</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ products_count }}</div>
+                        </div>
+                        <div class="col-auto"><i class="fas fa-box fa-2x text-gray-300"></i></div>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-4">
+        <a href="{% url 'orders_list' %}" class="text-decoration-none">
+            <div class="card border-left-warning h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Total Orders</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ orders_count }}</div>
+                        </div>
+                        <div class="col-auto"><i class="fas fa-shopping-cart fa-2x text-gray-300"></i></div>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-danger h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Total Sales</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">${{ total_sales }}</div>
+                    </div>
+                    <div class="col-auto"><i class="fas fa-dollar-sign fa-2x text-gray-300"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header"><h5 class="card-title"><i class="fas fa-chart-line me-2"></i>Sales Overview</h5></div>
+            <div class="card-body"><canvas id="salesChart" height="250"></canvas></div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card mb-4">
+            <div class="card-header"><h5 class="card-title"><i class="fas fa-chart-pie me-2"></i>Revenue Sources</h5></div>
+            <div class="card-body"><canvas id="revenueChart" height="250"></canvas></div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card mb-4">
+            <div class="card-header"><h5 class="card-title"><i class="fas fa-history me-2"></i>Recent Orders</h5></div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    {% for order in recent_orders %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-0">#{{ order.id }}</h6>
+                            <small class="text-muted">{{ order.user.username }} - {{ order.created_at|date:"M d, Y" }}</small>
+                        </div>
+                        <span class="badge 
+                            {% if order.total_amount < 200 %}bg-primary
+                            {% elif order.total_amount <= 1000 %}bg-success
+                            {% else %}bg-danger{% endif %}">
+                            ${{ order.total_amount }}
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card mb-4">
+            <div class="card-header"><h5 class="card-title"><i class="fas fa-tasks me-2"></i>Quick Actions</h5></div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6 mb-3"><a href="{% url 'products_list' %}" class="btn btn-outline-primary w-100 py-3"><i class="fas fa-plus-circle fa-2x mb-2"></i><h6>Add Product</h6></a></div>
+                    <div class="col-6 mb-3"><a href="{% url 'users_list' %}" class="btn btn-outline-success w-100 py-3"><i class="fas fa-user-plus fa-2x mb-2"></i><h6>Manage Users</h6></a></div>
+                    <div class="col-6 mb-3"><a href="{% url 'orders_list' %}" class="btn btn-outline-warning w-100 py-3"><i class="fas fa-clipboard-list fa-2x mb-2"></i><h6>View Orders</h6></a></div>
+                    <div class="col-6 mb-3"><a href="{% url 'reports_view' %}" class="btn btn-outline-info w-100 py-3"><i class="fas fa-chart-bar fa-2x mb-2"></i><h6>Reports</h6></a></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const salesChart = new Chart(document.getElementById('salesChart'), {
+        type: 'line',
+        data: {
+            labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+            datasets:[{
+                label:'Sales ($)',
+                data: {{ sales_by_month_json|safe }},
+                backgroundColor:'rgba(78,115,223,0.05)',
+                borderColor:'rgba(78,115,223,1)',
+                pointRadius:3, pointBackgroundColor:'rgba(78,115,223,1)',
+                pointBorderColor:'rgba(78,115,223,1)',
+                tension:0.3, fill:true
+            }]
+        },
+        options:{
+            maintainAspectRatio:false,
+            scales:{y:{beginAtZero:true, ticks:{callback:function(value){return '$'+value;}}}},
+            plugins:{legend:{display:false}}
+        }
+    });
+
+    const revenueChart = new Chart(document.getElementById('revenueChart'), {
+        type:'doughnut',
+        data:{
+            labels: {{ revenue_labels_json|safe }},
+            datasets:[{
+                data: {{ revenue_data_json|safe }},
+                backgroundColor:['#4e73df','#1cc88a','#36b9cc','#f6c23e'],
+                hoverBackgroundColor:['#2e59d9','#17a673','#2c9faf','#dda20a'],
+                hoverBorderColor:'rgba(234,236,244,1)'
+            }]
+        },
+        options:{
+            maintainAspectRatio:false,
+            plugins:{legend:{position:'bottom', labels:{usePointStyle:true,padding:20}}},
+            cutout:'70%'
+        }
+    });
+});
+</script>
+
+<style>
+.card{border:none;border-radius:10px;box-shadow:0 0.15rem 1.75rem 0 rgba(58,59,69,.15);}
+.card-header{background-color:#f8f9fc;border-bottom:1px solid #e3e6f0;}
+.border-left-primary{border-left:.25rem solid #4e73df !important;}
+.border-left-success{border-left:.25rem solid #1cc88a !important;}
+.border-left-warning{border-left:.25rem solid #f6c23e !important;}
+.border-left-danger{border-left:.25rem solid #e74a3b !important;}
+.text-xs{font-size:.7rem;}
+.text-gray-800{color:#5a5c69 !important;}
+.text-gray-300{color:#dddfeb !important;}
+.btn-group .btn{border-radius:.35rem;margin-right:.5rem;}
+.list-group-item{border-left:0;border-right:0;padding:1rem 0;}
+.list-group-item:first-child{border-top:0;}
+.list-group-item:last-child{border-bottom:0;}
+</style>
+
+{% endblock %}

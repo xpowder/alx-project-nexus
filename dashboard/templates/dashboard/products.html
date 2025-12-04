@@ -1,0 +1,310 @@
+{% extends "dashboard/base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-0"><i class="fas fa-box me-2"></i>Products</h2>
+        <p class="text-muted mb-0">Manage your product inventory</p>
+    </div>
+    <a href="{% url 'product_create' %}" class="btn btn-primary">
+        <i class="fas fa-plus-circle me-1"></i> Add New Product
+    </a>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-2">
+            <div class="col-md-6 mb-2">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    <input type="text" name="search" value="{{ request.GET.search }}" class="form-control" placeholder="Search products...">
+                    <button class="btn btn-outline-secondary" type="submit">Filter</button>
+                </div>
+            </div>
+            <div class="col-md-3 mb-2">
+                <select name="category" class="form-select" onchange="this.form.submit()">
+                    <option value="">All Categories</option>
+                    {% for category in categories %}
+                        <option value="{{ category.name }}" {% if request.GET.category == category.name %}selected{% endif %}>
+                            {{ category.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3 mb-2">
+                <select name="stock" class="form-select" onchange="this.form.submit()">
+                    <option value="">All Stock Status</option>
+                    <option value="inStock" {% if request.GET.stock == "inStock" %}selected{% endif %}>In Stock</option>
+                    <option value="lowStock" {% if request.GET.stock == "lowStock" %}selected{% endif %}>Low Stock</option>
+                    <option value="outOfStock" {% if request.GET.stock == "outOfStock" %}selected{% endif %}>Out of Stock</option>
+                </select>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-start-primary h-100">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <div class="text-xs fw-bold text-primary text-uppercase mb-1">Total Products</div>
+                        <div class="h5 mb-0 fw-bold text-gray-800">{{ page_obj.paginator.count }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-boxes fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-start-success h-100">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <div class="text-xs fw-bold text-success text-uppercase mb-1">In Stock</div>
+                        <div class="h5 mb-0 fw-bold text-gray-800">{{ in_stock }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-start-warning h-100">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <div class="text-xs fw-bold text-warning text-uppercase mb-1">Low Stock</div>
+                        <div class="h5 mb-0 fw-bold text-gray-800">{{ low_stock }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-start-danger h-100">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <div class="text-xs fw-bold text-danger text-uppercase mb-1">Out of Stock</div>
+                        <div class="h5 mb-0 fw-bold text-gray-800">{{ out_of_stock }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-times-circle fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header bg-light py-3">
+        <h5 class="card-title mb-0"><i class="fas fa-list me-2"></i>Product List</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Image</th>
+                        <th>Product</th>
+                        <th>Brand</th>
+                        <th>Weight (kg)</th>
+                        <th>Price</th>
+                        <th>Stock</th>
+                        <th>Category</th>
+                        <th>Active</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in page_obj %}
+                    <tr data-id="{{ product.id }}"
+                        data-name="{{ product.name }}"
+                        data-brand="{{ product.brand|default:'-' }}"
+                        data-weight="{{ product.weight|default:'-' }}"
+                        data-price="{{ product.price }}"
+                        data-stock="{{ product.stock }}"
+                        data-category="{{ product.category.name|default:'Uncategorized' }}"
+                        data-status="{% if product.is_active %}Active{% else %}Inactive{% endif %}"
+                        data-image="{% if product.image %}{{ product.image.url }}{% endif %}">
+                        <td>
+                            {% if product.image %}
+                                <img src="{{ product.image.url }}" alt="{{ product.name }}" class="rounded" width="60" height="60">
+                            {% else %}
+                                <div class="bg-light rounded d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                    <i class="fas fa-box text-muted"></i>
+                                </div>
+                            {% endif %}
+                        </td>
+                        <td>{{ product.name }}</td>
+                        <td>{{ product.brand|default:"-" }}</td>
+                        <td>{{ product.weight|default:"-" }}</td>
+                        <td>${{ product.price }}</td>
+                        <td>{{ product.stock }}</td>
+                        <td>{{ product.category.name|default:"Uncategorized" }}</td>
+                        <td>
+                            {% if product.is_active %}
+                                <span class="badge bg-success">Active</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group">
+                                <button class="btn btn-sm btn-outline-primary view-details-btn" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-success" onclick="window.location.href='{% url 'product_update' product.id %}'">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="window.location.href='{% url 'product_delete' product.id %}'">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="text-center py-4">
+                            <i class="fas fa-box-open fa-2x text-muted mb-2"></i>
+                            <p class="text-muted">No products found. <a href="{% url 'product_create' %}">Add your first product</a></p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer py-3">
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center mb-0">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.stock %}&stock={{ request.GET.stock }}{% endif %}" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+                {% endif %}
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                    {% else %}
+                        <li class="page-item"><a class="page-link" href="?page={{ num }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.stock %}&stock={{ request.GET.stock }}{% endif %}">{{ num }}</a></li>
+                    {% endif %}
+                {% endfor %}
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.stock %}&stock={{ request.GET.stock }}{% endif %}" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+</div>
+
+<div class="modal fade" id="productDetailsModal" tabindex="-1" data-bs-backdrop="false">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Product Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height:200px;">
+                            <i id="modalNoImage" class="fas fa-box text-muted fa-3x"></i>
+                            <img id="modalProductImage" class="img-fluid rounded" style="display:none; max-height:200px;">
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <p><strong>ID:</strong> <span id="modalProductId"></span></p>
+                        <p><strong>Name:</strong> <span id="modalProductName"></span></p>
+                        <p><strong>Brand:</strong> <span id="modalProductBrand"></span></p>
+                        <p><strong>Weight:</strong> <span id="modalProductWeight"></span> kg</p>
+                        <p><strong>Price:</strong> $<span id="modalProductPrice"></span></p>
+                        <p><strong>Stock:</strong> <span id="modalProductStock"></span></p>
+                        <p><strong>Category:</strong> <span id="modalProductCategory"></span></p>
+                        <p><strong>Status:</strong> <span id="modalProductStatus" class="badge"></span></p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-sm btn-primary" id="modalEditButton">Edit</button>
+                <button class="btn btn-sm btn-danger" id="modalDeleteButton">Delete</button>
+                <button class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const viewButtons = document.querySelectorAll('.view-details-btn');
+    const modalEl = document.getElementById('productDetailsModal');
+    const modalInstance = new bootstrap.Modal(modalEl);
+
+    viewButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const row = this.closest('tr');
+            const id = row.dataset.id;
+            const name = row.dataset.name;
+            const brand = row.dataset.brand;
+            const weight = row.dataset.weight;
+            const price = row.dataset.price;
+            const stock = row.dataset.stock;
+            const category = row.dataset.category;
+            const status = row.dataset.status;
+            const image = row.dataset.image;
+
+            document.getElementById('modalProductId').textContent = id;
+            document.getElementById('modalProductName').textContent = name;
+            document.getElementById('modalProductBrand').textContent = brand;
+            document.getElementById('modalProductWeight').textContent = weight;
+            document.getElementById('modalProductPrice').textContent = price;
+            document.getElementById('modalProductStock').textContent = stock;
+            document.getElementById('modalProductCategory').textContent = category;
+            const statusBadge = document.getElementById('modalProductStatus');
+            statusBadge.textContent = status;
+            statusBadge.className = 'badge ' + (status === 'Active' ? 'bg-success' : 'bg-secondary');
+
+            const img = document.getElementById('modalProductImage');
+            const noImg = document.getElementById('modalNoImage');
+            if(image){
+                img.src = image;
+                img.style.display = 'block';
+                noImg.style.display = 'none';
+            } else {
+                img.style.display = 'none';
+                noImg.style.display = 'block';
+            }
+
+            document.getElementById('modalEditButton').onclick = () => {
+                window.location.href = "{% url 'product_update' 0 %}".replace('0', id);
+            };
+            document.getElementById('modalDeleteButton').onclick = () => {
+                window.location.href = `/dashboard/products/${id}/delete/`;
+            };
+
+            modalInstance.show();
+        });
+    });
+});
+</script>
+{% endblock %}
