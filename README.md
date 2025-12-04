@@ -95,30 +95,44 @@ alx-project-nexus/
 
 2. **Create a virtual environment**
 
+   **Windows:**
    ```bash
-   python -m venv .env
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   python -m venv venv
+   venv\Scripts\activate
+   ```
+
+   **Linux/Mac:**
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate
    ```
 
 3. **Install dependencies**
 
    ```bash
+   pip install --upgrade pip
    pip install -r requirements.txt
    ```
 
 4. **Configure environment variables**
 
-   Create a `.env` file in the root directory with the following variables:
+   Create a `.env` file in the root directory. For local development with SQLite (easiest), you only need:
 
    ```env
-   SECRET_KEY=your_secret_key
+   SECRET_KEY=your_secret_key_here
    DEBUG=True
-   DATABASE_NAME=your_db_name
-   DATABASE_USER=your_db_user
-   DATABASE_PASSWORD=your_db_password
-   DATABASE_HOST=localhost
-   DATABASE_PORT=5432
+   ALLOWED_HOSTS=localhost,127.0.0.1
+   CSRF_TRUSTED_ORIGINS=http://localhost:8000,http://127.0.0.1:8000
    ```
+
+   **Generate a secret key:**
+   ```bash
+   python generate_secret_key.py
+   ```
+   
+   Copy the generated key to your `.env` file.
+
+   **Note:** The project uses SQLite by default for local development (no database setup needed). If you want to use PostgreSQL, see the deployment section.
 
 5. **Run migrations**
 
@@ -132,13 +146,36 @@ alx-project-nexus/
    python manage.py createsuperuser
    ```
 
-7. **Run the development server**
+7. **Load sample products** (optional but recommended)
+
+   ```bash
+   python manage.py load_sample_data
+   ```
+   
+   This will create sample categories and products for testing.
+
+8. **Run the development server**
 
    ```bash
    python manage.py runserver
    ```
 
 The API will be available at `http://localhost:8000/`
+
+### Quick Setup (Automated)
+
+**Windows:**
+```bash
+setup_local.bat
+```
+
+**Linux/Mac:**
+```bash
+chmod +x setup_local.sh
+./setup_local.sh
+```
+
+Then follow the prompts to complete the setup.
 
 ## API Documentation
 

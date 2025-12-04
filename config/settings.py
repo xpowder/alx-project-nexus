@@ -12,16 +12,25 @@ DEBUG = os.getenv("DEBUG", "False") == "True"
 
 # Get Render external URL if available
 RENDER_EXTERNAL_HOSTNAME = os.getenv('RENDER_EXTERNAL_HOSTNAME')
+VERCEL_URL = os.getenv('VERCEL_URL')
+VERCEL_ENV = os.getenv('VERCEL_ENV')
 
 ALLOWED_HOSTS = []
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+if VERCEL_URL:
+    ALLOWED_HOSTS.append(VERCEL_URL)
+    ALLOWED_HOSTS.append(f'.{VERCEL_URL.split(".", 1)[-1]}')  # Add wildcard domain
 
 if not DEBUG:
     # In production, only allow specific hosts
     allowed_hosts_env = os.getenv('ALLOWED_HOSTS', '')
     if allowed_hosts_env:
         ALLOWED_HOSTS.extend([host.strip() for host in allowed_hosts_env.split(',') if host.strip()])
+    # Add Vercel domains
+    ALLOWED_HOSTS.extend([
+        '.vercel.app',
+    ])
 else:
     # In development, allow all hosts
     ALLOWED_HOSTS = ['*']
@@ -29,15 +38,18 @@ else:
 CSRF_TRUSTED_ORIGINS = []
 if RENDER_EXTERNAL_HOSTNAME:
     CSRF_TRUSTED_ORIGINS.append(f'https://{RENDER_EXTERNAL_HOSTNAME}')
+if VERCEL_URL:
+    CSRF_TRUSTED_ORIGINS.append(f'https://{VERCEL_URL}')
 # Add custom trusted origins from environment variable
 csrf_origins_env = os.getenv('CSRF_TRUSTED_ORIGINS', '')
 if csrf_origins_env:
     CSRF_TRUSTED_ORIGINS.extend([origin.strip() for origin in csrf_origins_env.split(',') if origin.strip()])
-# Legacy Railway support and Render wildcard support
+# Platform wildcard support
 CSRF_TRUSTED_ORIGINS.extend([
     'https://*.up.railway.app',
     'https://*.railway.app',
     'https://*.onrender.com',
+    'https://*.vercel.app',
 ])
 INSTALLED_APPS = [
     'users',
@@ -82,6 +94,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'dashboard.context_processors.cart_context',
             ],
         },
     },

@@ -21,7 +21,7 @@ schema_view = get_schema_view(
 )
 
 urlpatterns = [
-    path("", lambda request: redirect("dashboard_home", permanent=False)),
+    path("", lambda request: redirect("home", permanent=False)),
 
     path("admin/", admin.site.urls),
     path("dashboard/", include("dashboard.urls")),

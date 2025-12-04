@@ -1,0 +1,155 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Checkout - DayliShop{% endblock %}
+
+{% block content %}
+<style>
+    .checkout-container {
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+    
+    .checkout-step {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .step-number {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--primary-color);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+    }
+    
+    .step-label {
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+    
+    .order-summary-card {
+        background: #f9fafb;
+        border-radius: 16px;
+        padding: 1.5rem;
+        position: sticky;
+        top: 100px;
+    }
+    
+    .summary-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .summary-item:last-child {
+        border-bottom: none;
+    }
+    
+    .summary-total {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--primary-color);
+    }
+</style>
+
+<div class="checkout-container">
+    <div class="checkout-step">
+        <div class="step-number">1</div>
+        <div class="step-label">Cart</div>
+    </div>
+    
+    <div class="checkout-step">
+        <div class="step-number" style="background: var(--primary-color);">2</div>
+        <div class="step-label">Review Order</div>
+    </div>
+    
+    <div class="checkout-step">
+        <div class="step-number" style="background: #9ca3af;">3</div>
+        <div class="step-label">Payment</div>
+    </div>
+    
+    <hr class="my-4">
+    
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="fas fa-shopping-cart me-2"></i>Order Review</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Quantity</th>
+                                    <th>Price</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in items %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ item.product.name }}</strong>
+                                        {% if item.product.brand %}
+                                        <br><small class="text-muted">Brand: {{ item.product.brand }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ item.quantity }}</td>
+                                    <td>${{ item.product.price|floatformat:2 }}</td>
+                                    <td>${{ item.total_price|floatformat:2 }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="d-flex gap-2">
+                <a href="{% url 'cart_page' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Cart
+                </a>
+                <form method="post" class="ms-auto">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        Proceed to Payment <i class="fas fa-arrow-right ms-2"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="order-summary-card">
+                <h5 class="mb-3">Order Summary</h5>
+                <div class="summary-item">
+                    <span>Subtotal:</span>
+                    <span>${{ cart.total_price|floatformat:2 }}</span>
+                </div>
+                <div class="summary-item">
+                    <span>Shipping:</span>
+                    <span>$5.00</span>
+                </div>
+                <div class="summary-item">
+                    <span>Tax:</span>
+                    <span>${{ cart.tax|default:"0.00"|floatformat:2 }}</span>
+                </div>
+                <hr>
+                <div class="summary-item summary-total">
+                    <span>Total:</span>
+                    <span>${{ cart.total_with_shipping|floatformat:2 }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

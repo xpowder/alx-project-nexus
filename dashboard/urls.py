@@ -2,8 +2,8 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path('', views.admin_dashboard, name="dashboard_home"),
-    path('admin-dashboard/', views.admin_dashboard, name="admin_dashboard"),
+    path('', views.home_view, name="home"),
+    path('admin-dashboard/', views.admin_dashboard, name="dashboard_home"),
     path('reports/', views.reports_view, name='reports_view'),
     path('users/', views.users_list, name="users_list"),
     path('users/<int:pk>/role/', views.user_update_role, name="user_update_role"),
@@ -28,4 +28,7 @@ urlpatterns = [
     path('cart/clear/', views.clear_cart, name='clear_cart'),
     path('cart/remove/<int:item_id>/', views.remove_from_cart, name='remove_from_cart'),
     path('shop/', views.shop_view, name='shop'),
+    path('checkout/', views.checkout_view, name='checkout'),
+    path('payment/<int:order_id>/', views.payment_view, name='payment'),
+    path('order-success/<int:order_id>/', views.order_success_view, name='order_success'),
 ]

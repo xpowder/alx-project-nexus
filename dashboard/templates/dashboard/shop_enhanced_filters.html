@@ -1,0 +1,124 @@
+<!-- Enhanced Category Filters Section -->
+<div class="filters-card">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3><i class="fas fa-filter text-primary"></i> Filter Products</h3>
+        <button class="btn btn-sm btn-outline-secondary" onclick="clearFilters()">
+            <i class="fas fa-times"></i> Clear All
+        </button>
+    </div>
+    
+    <!-- Category Filter -->
+    <div class="mb-4">
+        <label class="form-label fw-bold mb-2"><i class="fas fa-tags"></i> Categories</label>
+        <div class="category-filters">
+            <button class="category-filter {% if selected_category == 'all' %}active{% endif %}" 
+                    data-category="all" onclick="filterByCategory('all')">
+                <i class="fas fa-th-large me-2"></i>All Products
+            </button>
+            {% for category in categories %}
+                <button class="category-filter {% if selected_category == category.name %}active{% endif %}" 
+                        data-category="{{ category.name }}" 
+                        onclick="filterByCategory('{{ category.name }}')">
+                    <i class="fas fa-{% cycle 'laptop' 'tshirt' 'book' 'home' 'dumbbell' %} me-2"></i>{{ category.name }}
+                    <span class="badge bg-secondary ms-2">{{ category.products.count }}</span>
+                </button>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <hr>
+    
+    <!-- Price Range Filter -->
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label class="form-label fw-bold"><i class="fas fa-dollar-sign"></i> Price Range</label>
+            <div class="input-group mb-2">
+                <span class="input-group-text">$</span>
+                <input type="number" class="form-control" id="minPrice" placeholder="Min" min="0" step="10" 
+                       value="{{ min_price|default:0 }}" onchange="updatePriceFilter()">
+                <span class="input-group-text">to</span>
+                <input type="number" class="form-control" id="maxPriceInput" placeholder="Max" min="0" step="10" 
+                       value="{{ max_price|default:1000 }}" onchange="updatePriceFilter()">
+            </div>
+            <input type="range" class="form-range" min="0" max="1000" step="10" 
+                   id="priceRange" value="{{ max_price|default:1000 }}" 
+                   oninput="updatePriceRange(this.value)">
+            <div class="d-flex justify-content-between">
+                <small class="text-muted">$0</small>
+                <small class="text-muted" id="maxPriceDisplay">${{ max_price|default:1000 }}</small>
+            </div>
+        </div>
+        
+        <!-- Sort Filter -->
+        <div class="col-md-6">
+            <label class="form-label fw-bold"><i class="fas fa-sort"></i> Sort By</label>
+            <select class="form-select" id="sortBy" onchange="updateSort()">
+                <option value="name" {% if sort == 'name' %}selected{% endif %}>
+                    <i class="fas fa-sort-alpha-down"></i> Name (A-Z)
+                </option>
+                <option value="price-low" {% if sort == 'price-low' %}selected{% endif %}>
+                    <i class="fas fa-sort-numeric-down"></i> Price: Low to High
+                </option>
+                <option value="price-high" {% if sort == 'price-high' %}selected{% endif %}>
+                    <i class="fas fa-sort-numeric-up"></i> Price: High to Low
+                </option>
+                <option value="newest" {% if sort == 'newest' %}selected{% endif %}>
+                    <i class="fas fa-clock"></i> Newest First
+                </option>
+            </select>
+        </div>
+    </div>
+    
+    <!-- Stock Filter -->
+    <div class="mt-3">
+        <label class="form-label fw-bold mb-2"><i class="fas fa-box"></i> Stock Status</label>
+        <div class="btn-group w-100" role="group">
+            <input type="radio" class="btn-check" name="stockFilter" id="stockAll" value="all" checked>
+            <label class="btn btn-outline-primary" for="stockAll">All</label>
+            
+            <input type="radio" class="btn-check" name="stockFilter" id="stockIn" value="in">
+            <label class="btn btn-outline-success" for="stockIn">In Stock</label>
+            
+            <input type="radio" class="btn-check" name="stockFilter" id="stockLow" value="low">
+            <label class="btn btn-outline-warning" for="stockLow">Low Stock</label>
+        </div>
+    </div>
+</div>
+
+<script>
+function filterByCategory(category) {
+    const queryParams = new URLSearchParams(window.location.search);
+    queryParams.set('category', category);
+    queryParams.set('page', '1');
+    window.location.href = `?${queryParams.toString()}`;
+}
+
+function updatePriceRange(value) {
+    document.getElementById('maxPriceInput').value = value;
+    document.getElementById('maxPriceDisplay').textContent = '$' + value;
+    updatePriceFilter();
+}
+
+function updatePriceFilter() {
+    const minPrice = document.getElementById('minPrice').value || 0;
+    const maxPrice = document.getElementById('maxPriceInput').value || 1000;
+    const queryParams = new URLSearchParams(window.location.search);
+    queryParams.set('min_price', minPrice);
+    queryParams.set('max_price', maxPrice);
+    queryParams.set('page', '1');
+    window.location.href = `?${queryParams.toString()}`;
+}
+
+function updateSort() {
+    const sort = document.getElementById('sortBy').value;
+    const queryParams = new URLSearchParams(window.location.search);
+    queryParams.set('sort', sort);
+    queryParams.set('page', '1');
+    window.location.href = `?${queryParams.toString()}`;
+}
+
+function clearFilters() {
+    window.location.href = '{% url "shop" %}';
+}
+</script>
+

@@ -94,28 +94,34 @@
     
     .product-card {
         background: white;
-        border-radius: var(--border-radius);
-        box-shadow: var(--card-shadow);
+        border-radius: 16px;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
         overflow: hidden;
-        transition: all 0.3s;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         position: relative;
+        border: 1px solid #e5e7eb;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
     }
     
     .product-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+        transform: translateY(-8px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        border-color: var(--primary-color);
     }
     
     .product-image {
-        height: 200px;
-        background: linear-gradient(45deg, #e0c3fc 0%, #8ec5fc 100%);
+        height: 280px;
+        background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
         display: flex;
         align-items: center;
         justify-content: center;
-        color: white;
+        color: #9ca3af;
         font-size: 4rem;
         position: relative;
         overflow: hidden;
+        border-bottom: 1px solid #e5e7eb;
     }
     
     .product-image img {
@@ -397,45 +403,101 @@
                 <input type="text" class="form-control" placeholder="Search products..." id="searchInput" value="{{ search }}">
             </div>
             
+            {% if user.is_authenticated %}
             <a href="{% url 'cart_page' %}" class="btn-cart">
                 <i class="fas fa-shopping-cart"></i>
                 Cart
                 <span class="cart-badge" id="cartCount">{{ cart_items_count }}</span>
             </a>
+            {% else %}
+            <a href="{% url 'login' %}" class="btn-cart">
+                <i class="fas fa-sign-in-alt"></i>
+                Login
+            </a>
+            {% endif %}
         </div>
     </div>
     
     <div class="filters-card">
-        <h3><i class="fas fa-filter text-primary"></i> Filter Products</h3>
-        <form method="get" class="filter-form">
-            <input type="hidden" name="page" value="1">
-        </form>
-        <div class="category-filters">
-            <button class="category-filter {% if selected_category == 'all' %}active{% endif %}" data-category="all">All Products</button>
-            {% for category in categories %}
-                <button class="category-filter {% if selected_category == category.name %}active{% endif %}" data-category="{{ category.name }}">{{ category.name }}</button>
-            {% endfor %}
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3><i class="fas fa-filter text-primary"></i> Filter Products</h3>
+            <button class="btn btn-sm btn-outline-secondary" onclick="clearFilters()">
+                <i class="fas fa-times"></i> Clear All
+            </button>
         </div>
         
-        <div class="row g-3 mt-2">
+        <!-- Category Filter -->
+        <div class="mb-4">
+            <label class="form-label fw-bold mb-2"><i class="fas fa-tags"></i> Categories</label>
+            <div class="category-filters">
+                <button class="category-filter {% if selected_category == 'all' %}active{% endif %}" 
+                        data-category="all" onclick="filterByCategory('all')">
+                    <i class="fas fa-th-large me-2"></i>All Products
+                </button>
+                {% for category in categories %}
+                    <button class="category-filter {% if selected_category == category.name %}active{% endif %}" 
+                            data-category="{{ category.name }}" 
+                            onclick="filterByCategory('{{ category.name }}')">
+                        <i class="fas fa-{% cycle 'laptop' 'tshirt' 'book' 'home' 'dumbbell' %} me-2"></i>{{ category.name }}
+                        <span class="badge bg-secondary ms-2">{{ category.products.count }}</span>
+                    </button>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <hr>
+        
+        <!-- Price Range Filter -->
+        <div class="row g-3">
             <div class="col-md-6">
-                <label class="form-label"><i class="fas fa-dollar-sign"></i> Price Range</label>
-                <input type="range" class="form-range" min="0" max="1000" step="10" id="priceRange" value="{{ max_price|default:1000 }}">
+                <label class="form-label fw-bold"><i class="fas fa-dollar-sign"></i> Price Range</label>
+                <div class="input-group mb-2">
+                    <span class="input-group-text">$</span>
+                    <input type="number" class="form-control" id="minPrice" placeholder="Min" min="0" step="10" 
+                           value="{{ min_price|default:0 }}" onchange="updatePriceFilter()">
+                    <span class="input-group-text">to</span>
+                    <input type="number" class="form-control" id="maxPriceInput" placeholder="Max" min="0" step="10" 
+                           value="{{ max_price|default:1000 }}" onchange="updatePriceFilter()">
+                </div>
+                <input type="range" class="form-range" min="0" max="1000" step="10" 
+                       id="priceRange" value="{{ max_price|default:1000 }}" 
+                       oninput="updatePriceRange(this.value)">
                 <div class="d-flex justify-content-between">
-                    <span>$0</span>
-                    <span id="maxPrice">${{ max_price|default:1000 }}</span>
+                    <small class="text-muted">$0</small>
+                    <small class="text-muted" id="maxPriceDisplay">${{ max_price|default:1000 }}</small>
                 </div>
             </div>
             
+            <!-- Sort Filter -->
             <div class="col-md-6">
-                <label class="form-label"><i class="fas fa-sort"></i> Sort By</label>
-                <select class="form-select" id="sortBy">
+                <label class="form-label fw-bold"><i class="fas fa-sort"></i> Sort By</label>
+                <select class="form-select" id="sortBy" onchange="updateSort()">
                     <option value="name" {% if sort == 'name' %}selected{% endif %}>Name (A-Z)</option>
                     <option value="price-low" {% if sort == 'price-low' %}selected{% endif %}>Price: Low to High</option>
                     <option value="price-high" {% if sort == 'price-high' %}selected{% endif %}>Price: High to Low</option>
                     <option value="newest" {% if sort == 'newest' %}selected{% endif %}>Newest First</option>
-                    <option value="popular" {% if sort == 'popular' %}selected{% endif %}>Most Popular</option>
                 </select>
+            </div>
+        </div>
+        
+        <!-- Stock Filter -->
+        <div class="mt-3">
+            <label class="form-label fw-bold mb-2"><i class="fas fa-box"></i> Stock Status</label>
+            <div class="btn-group w-100" role="group">
+                <input type="radio" class="btn-check" name="stockFilter" id="stockAll" value="all" 
+                       {% if not stock_filter or stock_filter == 'all' %}checked{% endif %} 
+                       onchange="filterByStock('all')">
+                <label class="btn btn-outline-primary" for="stockAll">All</label>
+                
+                <input type="radio" class="btn-check" name="stockFilter" id="stockIn" value="in" 
+                       {% if stock_filter == 'in' %}checked{% endif %} 
+                       onchange="filterByStock('in')">
+                <label class="btn btn-outline-success" for="stockIn">In Stock</label>
+                
+                <input type="radio" class="btn-check" name="stockFilter" id="stockLow" value="low" 
+                       {% if stock_filter == 'low' %}checked{% endif %} 
+                       onchange="filterByStock('low')">
+                <label class="btn btn-outline-warning" for="stockLow">Low Stock</label>
             </div>
         </div>
     </div>
@@ -477,6 +539,7 @@
                     </div>
                 </div>
                 
+                {% if user.is_authenticated %}
                 <form method="post" class="add-to-cart-form">
                     {% csrf_token %}
                     <input type="hidden" name="product_id" value="{{ product.id }}">
@@ -490,6 +553,11 @@
                         {% endif %}
                     </button>
                 </form>
+                {% else %}
+                <a href="{% url 'login' %}" class="btn-add-to-cart w-100 text-center" style="text-decoration: none; display: block;">
+                    <i class="fas fa-sign-in-alt"></i> Login to Add to Cart
+                </a>
+                {% endif %}
             </div>
         </div>
         {% empty %}
@@ -525,44 +593,68 @@
 </div>
 
 <script>
+function filterByCategory(category) {
+    const queryParams = new URLSearchParams(window.location.search);
+    queryParams.set('category', category);
+    queryParams.set('page', '1');
+    window.location.href = `?${queryParams.toString()}`;
+}
+
+function updatePriceRange(value) {
+    const maxPriceInput = document.getElementById('maxPriceInput');
+    const maxPriceDisplay = document.getElementById('maxPriceDisplay');
+    if (maxPriceInput) maxPriceInput.value = value;
+    if (maxPriceDisplay) maxPriceDisplay.textContent = '$' + value;
+    updatePriceFilter();
+}
+
+function updatePriceFilter() {
+    const minPrice = document.getElementById('minPrice')?.value || 0;
+    const maxPrice = document.getElementById('maxPriceInput')?.value || 1000;
+    const queryParams = new URLSearchParams(window.location.search);
+    if (minPrice) queryParams.set('min_price', minPrice);
+    if (maxPrice) queryParams.set('max_price', maxPrice);
+    queryParams.set('page', '1');
+    window.location.href = `?${queryParams.toString()}`;
+}
+
+function updateSort() {
+    const sort = document.getElementById('sortBy').value;
+    const queryParams = new URLSearchParams(window.location.search);
+    queryParams.set('sort', sort);
+    queryParams.set('page', '1');
+    window.location.href = `?${queryParams.toString()}`;
+}
+
+function filterByStock(stock) {
+    const queryParams = new URLSearchParams(window.location.search);
+    queryParams.set('stock', stock);
+    queryParams.set('page', '1');
+    window.location.href = `?${queryParams.toString()}`;
+}
+
+function clearFilters() {
+    window.location.href = '{% url "shop" %}';
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('searchInput');
     const priceRange = document.getElementById('priceRange');
-    const sortBy = document.getElementById('sortBy');
-    const categoryFilters = document.querySelectorAll('.category-filter');
 
-    categoryFilters.forEach(filter => {
-        filter.addEventListener('click', function() {
-            categoryFilters.forEach(f => f.classList.remove('active'));
-            this.classList.add('active');
+    if (searchInput) {
+        searchInput.addEventListener('input', debounce(function() {
             const queryParams = new URLSearchParams(window.location.search);
-            queryParams.set('category', this.dataset.category);
+            queryParams.set('search', searchInput.value);
             queryParams.set('page', '1');
             window.location.href = `?${queryParams.toString()}`;
+        }, 300));
+    }
+
+    if (priceRange) {
+        priceRange.addEventListener('input', function() {
+            updatePriceRange(this.value);
         });
-    });
-
-    searchInput.addEventListener('input', debounce(function() {
-        const queryParams = new URLSearchParams(window.location.search);
-        queryParams.set('search', searchInput.value);
-        queryParams.set('page', '1');
-        window.location.href = `?${queryParams.toString()}`;
-    }, 300));
-
-    priceRange.addEventListener('input', function() {
-        document.getElementById('maxPrice').textContent = '$' + this.value;
-        const queryParams = new URLSearchParams(window.location.search);
-        queryParams.set('max_price', this.value);
-        queryParams.set('page', '1');
-        window.location.href = `?${queryParams.toString()}`;
-    });
-
-    sortBy.addEventListener('change', function() {
-        const queryParams = new URLSearchParams(window.location.search);
-        queryParams.set('sort', this.value);
-        queryParams.set('page', '1');
-        window.location.href = `?${queryParams.toString()}`;
-    });
+    }
 
     document.querySelectorAll('.add-to-cart-form').forEach(form => {
         form.addEventListener('submit', function(e) {

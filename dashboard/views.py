@@ -103,7 +103,10 @@ def login_view(request):
         if form.is_valid():
             user = form.get_user()
             login(request, user)
-            return redirect("dashboard_home" if user.is_staff else "shop")
+            next_url = request.GET.get('next', None)
+            if next_url:
+                return redirect(next_url)
+            return redirect("dashboard_home" if user.is_staff else "home")
     else:
         form = AuthenticationForm()
     return render(request, "dashboard/login.html", {"form": form})
@@ -332,6 +335,84 @@ def cart_page(request):
     return render(request, "dashboard/cart.html", {"cart": cart, "items": items})
 
 @login_required
+def checkout_view(request):
+    """Checkout page - requires login"""
+    cart, _ = Cart.objects.get_or_create(user=request.user)
+    items = cart.items.select_related("product")
+    
+    if not items.exists():
+        messages.warning(request, "Your cart is empty. Add some items first!")
+        return redirect('cart_page')
+    
+    if request.method == "POST":
+        # Create order
+        order = Order.objects.create(user=request.user, status="Pending")
+        
+        for item in items:
+            OrderItem.objects.create(
+                order=order,
+                product=item.product,
+                quantity=item.quantity,
+                price=item.product.price
+            )
+        
+        # Clear cart
+        cart.items.all().delete()
+        
+        # Redirect to payment page
+        return redirect('payment', order_id=order.id)
+    
+    context = {
+        "cart": cart,
+        "items": items,
+    }
+    return render(request, "dashboard/checkout.html", context)
+
+@login_required
+def payment_view(request, order_id):
+    """Payment page with fake payment form"""
+    order = get_object_or_404(Order, id=order_id, user=request.user)
+    
+    if request.method == "POST":
+        # Process fake payment
+        payment_method = request.POST.get("payment_method")
+        card_number = request.POST.get("card_number", "")
+        expiry_date = request.POST.get("expiry_date", "")
+        cvv = request.POST.get("cvv", "")
+        
+        # Fake payment validation
+        if payment_method == "card":
+            if len(card_number.replace(" ", "")) >= 13 and expiry_date and len(cvv) == 3:
+                # Mark order as processing
+                order.status = "Processing"
+                order.save()
+                messages.success(request, "Payment successful! Your order is being processed.")
+                return redirect('order_success', order_id=order.id)
+            else:
+                messages.error(request, "Invalid payment details. Please check your card information.")
+        else:
+            # Other payment methods (also fake)
+            order.status = "Processing"
+            order.save()
+            messages.success(request, "Payment successful! Your order is being processed.")
+            return redirect('order_success', order_id=order.id)
+    
+    context = {
+        "order": order,
+        "total": order.total_amount,
+    }
+    return render(request, "dashboard/payment.html", context)
+
+@login_required
+def order_success_view(request, order_id):
+    """Order success page"""
+    order = get_object_or_404(Order, id=order_id, user=request.user)
+    context = {
+        "order": order,
+    }
+    return render(request, "dashboard/order_success.html", context)
+
+@login_required
 def clear_cart(request):
     cart = get_object_or_404(Cart, user=request.user)
     cart.items.all().delete()
@@ -345,24 +426,48 @@ def remove_from_cart(request, item_id):
     messages.success(request, "Item removed from cart!")
     return redirect("cart_page")
 
-@login_required
+def home_view(request):
+    """Homepage view - accessible to everyone"""
+    categories = Category.objects.all()
+    featured_products = Product.objects.filter(stock__gt=0, is_active=True).order_by('-created_at')[:8]
+    context = {
+        'categories': categories,
+        'featured_products': featured_products,
+    }
+    return render(request, "dashboard/home.html", context)
+
 def shop_view(request):
-    products = Product.objects.filter(stock__gt=0)
+    """Shop view - accessible to everyone, but login required for purchases"""
+    products = Product.objects.filter(stock__gt=0, is_active=True)
     categories = Category.objects.all()
     search = request.GET.get("search", "")
     selected_category = request.GET.get("category", "all")
+    min_price = request.GET.get("min_price", "")
     max_price = request.GET.get("max_price", "")
+    stock_filter = request.GET.get("stock", "")
     sort = request.GET.get("sort", "name")
+    
     if search:
         products = products.filter(name__icontains=search)
     if selected_category != "all":
         products = products.filter(category__name=selected_category)
+    if min_price:
+        try:
+            min_price = float(min_price)
+            products = products.filter(price__gte=min_price)
+        except ValueError:
+            min_price = 0
     if max_price:
         try:
             max_price = float(max_price)
             products = products.filter(price__lte=max_price)
         except ValueError:
             max_price = 1000
+    if stock_filter == "in":
+        products = products.filter(stock__gt=10)
+    elif stock_filter == "low":
+        products = products.filter(stock__gt=0, stock__lte=10)
+    
     if sort == "price-low":
         products = products.order_by("price")
     elif sort == "price-high":
@@ -373,15 +478,26 @@ def shop_view(request):
         products = products.order_by("-views")
     else:
         products = products.order_by("name")
+    
     paginator = Paginator(products, 20)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
-    cart, _ = Cart.objects.get_or_create(user=request.user)
-    cart_items_count = cart.items.count()
+    
+    cart_items_count = 0
+    if request.user.is_authenticated:
+        cart, _ = Cart.objects.get_or_create(user=request.user)
+        cart_items_count = cart.items.count()
+    
+    # Handle adding to cart - require login
     if request.method == "POST":
+        if not request.user.is_authenticated:
+            messages.warning(request, "Please login to add items to your cart.")
+            return redirect('login')
+        
         product_id = request.POST.get("product_id")
         quantity = int(request.POST.get("quantity", 1))
         if product_id:
+            cart, _ = Cart.objects.get_or_create(user=request.user)
             product = get_object_or_404(Product, id=product_id, stock__gt=0)
             if quantity <= product.stock:
                 cart_item, created = CartItem.objects.get_or_create(
@@ -396,11 +512,14 @@ def shop_view(request):
         query_params = request.GET.urlencode()
         redirect_url = f"?{query_params}" if query_params else ""
         return redirect(f"{request.path}{redirect_url}")
+    
     context = {
         "page_obj": page_obj,
         "categories": categories,
         "selected_category": selected_category,
+        "min_price": min_price,
         "max_price": max_price,
+        "stock_filter": stock_filter,
         "sort": sort,
         "search": search,
         "cart_items_count": cart_items_count,
